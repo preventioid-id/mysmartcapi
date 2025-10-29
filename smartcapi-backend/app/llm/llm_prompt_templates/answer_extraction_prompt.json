@@ -1,0 +1,53 @@
+{
+  "task": "Ekstraksi informasi kunci dari transkripsi wawancara.",
+  "instructions": "Berdasarkan transkripsi yang diberikan, isilah nilai untuk setiap field di bawah ini. Jika informasi tidak disebutkan, biarkan nilainya null. Fokus hanya pada jawaban dari orang yang diwawancarai, bukan pewawancara.",
+  "schema": {
+    "nama": {
+      "type": "string",
+      "description": "Nama lengkap responden."
+    },
+    "alamat": {
+      "type": "string",
+      "description": "Alamat tempat tinggal responden."
+    },
+    "tempat_lahir": {
+      "type": "string",
+      "description": "Kota atau tempat di mana responden lahir."
+    },
+    "tanggal_lahir": {
+      "type": "string",
+      "description": "Tanggal lahir responden dalam format dd/mm/yyyy."
+    },
+    "usia": {
+      "type": "integer",
+      "description": "Usia responden dalam tahun."
+    },
+    "pendidikan": {
+      "type": "string",
+      "description": "Tingkat pendidikan terakhir responden.",
+      "options": [
+        "Tidak/Belum Bersekolah",
+        "SD",
+        "SMP",
+        "SMA",
+        "Perguruan Tinggi"
+      ]
+    },
+    "pekerjaan": {
+      "type": "string",
+      "description": "Pekerjaan atau profesi responden saat ini."
+    },
+    "hobi": {
+      "type": "string",
+      "description": "Hobi atau kegiatan yang disukai responden."
+    },
+    "nomor_telepon": {
+      "type": "string",
+      "description": "Nomor telepon responden yang bisa dihubungi."
+    },
+    "alamat_email": {
+      "type": "string",
+      "description": "Alamat email responden."
+    }
+  }
+}

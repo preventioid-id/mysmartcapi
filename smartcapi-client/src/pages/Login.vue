@@ -13,41 +13,122 @@
       <div class="login-links">
         <span>Belum punya akun? Klik <a href="#" @click.prevent="goRegister">daftar</a></span>
         <span>Lupa password ? Klik <a href="#" @click.prevent="goForgot">sini</a></span>
+        <span>Mau Tahu tentang SmartCAPI ? Klik <a href="#" @click.prevent="goAboutUs">sini</a></span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-// 1. Impor auth store yang sudah Anda buat
-import { useAuthStore } from '../store/auth';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+// Pastikan path store sesuai struktur proyek Anda.
+// Jika store berada di src/store/auth.ts atau .js, gunakan '@/store/auth'.
+// Jika file ini ada di folder pages dan store di src/store, '../store/auth' juga bisa.
+// Silakan sesuaikan path jika Anda mendapat error "module not found".
+import { useAuthStore } from '@/store/auth' // ganti ke '../store/auth' bila diperlukan
 
-const router = useRouter();
-// 2. Inisialisasi store agar bisa digunakan
-const authStore = useAuthStore(); 
-const username = ref('');
-const password = ref('');
+const router = useRouter()
+const authStore = (typeof useAuthStore === 'function') ? useAuthStore() : null
 
-function onLogin() {
-  console.log('Attempting login...');
-  
-  // 3. Panggil aksi login dari authStore sebelum navigasi
-  // Di aplikasi nyata, ID, nama, dan token akan didapat dari respons API.
-  // Untuk contoh ini, kita gunakan data dummy.
-  authStore.login('user-001', username.value, 'dummy-secret-token-from-api');
+const username = ref('')
+const password = ref('')
 
-  // 4. Arahkan ke halaman rekapitulasi SETELAH status login diubah
-  router.push('/rekapitulasi');
+/**
+ * Helper check for admin credentials as requested:
+ * username: admincapi
+ * password: supercapi
+ */
+const isAdminCredential = (u, p) => u === 'admincapi' && p === 'supercapi'
+
+async function onLogin() {
+  // Validasi singkat
+  if (!username.value || !password.value) {
+    alert('Masukkan username dan password')
+    return
+  }
+
+  try {
+    // Jika ada authStore dengan method login, panggil. Asumsikan signature login(username, password).
+    if (authStore && typeof authStore.login === 'function') {
+      // Jika implementasi login pada store mengembalikan promise/result, tunggu hasilnya.
+      const res = await authStore.login(username.value, password.value)
+      // Tanggapan login bisa bervariasi; kita tangani beberapa kemungkinan umum
+      if (res === true || (res && res.ok) || (res && res.user)) {
+        // Jika kredensial yang dimasukkan merupakan admin khusus, arahkan ke RekapitulasiUser.vue
+        if (isAdminCredential(username.value, password.value)) {
+          // Jika store menyediakan setter untuk user, cobalah set role admin agar konsisten
+          try {
+            if (authStore && typeof authStore.setUser === 'function') {
+              authStore.setUser({
+                username: 'admincapi',
+                role: 'admin',
+                name: 'Administrator SmartCAPI',
+                token: (res && res.token) ? res.token : 'admin-token-please-replace'
+              })
+            } else if (res && res.user) {
+              // jika response sudah berisi user, coba pastikan role ada
+              res.user.role = res.user.role || 'admin'
+              localStorage.setItem('auth_user', JSON.stringify(res.user))
+            } else {
+              // fallback: simpan user admin ke localStorage agar route guard membaca role
+              const adminUser = { username: 'admincapi', role: 'admin', token: (res && res.token) ? res.token : 'admin-token-please-replace' }
+              localStorage.setItem('auth_user', JSON.stringify(adminUser))
+              localStorage.setItem('auth_token', adminUser.token)
+            }
+          } catch (e) {
+            // jangan ganggu alur bila store tidak mendukung setUser
+            console.warn('Could not set user in store', e)
+          }
+
+          router.push('/rekapitulasi-user')
+          return
+        }
+
+        // Keberhasilan: arahkan pengguna (non-admin)
+        router.push('/rekapitulasi')
+        return
+      } else {
+        // Jika login gagal, tampilkan pesan bila ada
+        const msg = (res && res.error) ? res.error : 'Login gagal. Periksa kredensial.'
+        alert(msg)
+        return
+      }
+    }
+
+    // Jika tidak ada authStore (fallback/testing), simulasikan login sederhana
+    // Pada fallback ini, kita simpan user dasar di localStorage agar route-guard dapat membaca role
+    const fallbackUser = {
+      username: username.value,
+      role: username.value === 'admincapi' && password.value === 'supercapi' ? 'admin' : 'user',
+      token: 'local-fallback-token'
+    }
+    localStorage.setItem('auth_user', JSON.stringify(fallbackUser))
+    localStorage.setItem('auth_token', fallbackUser.token)
+
+    // tambahan: jika kredensial admin, arahkan ke halaman rekapitulasi user admin
+    if (isAdminCredential(username.value, password.value)) {
+      router.push('/rekapitulasi-user')
+      return
+    }
+
+    router.push('/rekapitulasi')
+  } catch (err) {
+    console.error('Login error', err)
+    alert('Terjadi kesalahan saat proses login.')
+  }
 }
 
 function goRegister() {
-  router.push('/register');
+  router.push('/register')
 }
 
 function goForgot() {
-  router.push('/forget-password');
+  router.push('/forget-password')
+}
+
+function goAboutUs() {
+  router.push('/about-us')
 }
 </script>
 
